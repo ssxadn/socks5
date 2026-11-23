@@ -58,7 +58,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/ssxadn/socks5/main/precheck.
 |---|---|---|
 | `PORT_BASE` | `5000` | 起始端口，第 n 个 IP 用 `PORT_BASE+n` |
 | `LISTEN_IPS` | 自动探测 | 手动指定，空格或逗号分隔 |
-| `XRAY_VERSION` | `1.6.1` | 建议填 `latest` 拿最新版 |
+| `XRAY_VERSION` | `26.11.9` | 当前最新稳定版；填 `latest` 自动取最新 |
 | `XRAY_ZIP_URL` | 官方 + gitee 镜像 | 支持 `file://` 离线安装 |
 | `XRAY_SHA256` | 空 | 期望哈希；官方源会自动抓 `.dgst` 校验 |
 
@@ -150,7 +150,7 @@ firewall-cmd --permanent --remove-port=5000-5005/{tcp,udp} && firewall-cmd --rel
 
 - 脚本需要 **root** 权限，会写 `/etc` 与 `/root`，跑之前请先读代码。
 - 公网暴露 SOCKS5 等于开放代理：密码只有 6 位字母、无 TLS、UDP 全开。**建议**加来源 IP 白名单（`firewall-cmd --add-rich-rule`）或改用 VLESS+REALITY。
-- 默认锁定的 1.6.1 是 2022 年的版本，已 EOL，生产环境请用 `XRAY_VERSION=latest`。
+- 默认安装 **v26.11.9**（2026-11-09 发布，当前最新稳定版）；想跟进新版用 `XRAY_VERSION=latest`。
 
 ## License
 

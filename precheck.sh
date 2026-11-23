@@ -145,12 +145,21 @@ check_url() {
   [[ "$code" =~ ^(200|206)$ ]]
 }
 
-for u in \
-  "https://github.com/XTLS/Xray-core/releases/download/v1.6.1/Xray-linux-64.zip" \
-  "https://gitee.com/sk_gg/sk5/releases/download/Xray1.6.1/Xray-linux-64.zip"
-do
-  if check_url "$u"; then pass "可下载：$u"; else fail "下不到（404/超时/被墙）：$u"; fi
-done
+LATEST_XRAY="$(curl -fsSL --max-time 15 https://api.github.com/repos/XTLS/Xray-core/releases/latest 2>/dev/null \
+  | sed -n 's/.*"tag_name": *"v\{0,1\}\([^"]*\)".*/\1/p' | head -1 || true)"
+[[ -n "$LATEST_XRAY" ]] || LATEST_XRAY="26.11.9"
+info "Xray 最新版本：v${LATEST_XRAY}"
+
+if check_url "https://github.com/XTLS/Xray-core/releases/download/v${LATEST_XRAY}/Xray-linux-64.zip"; then
+  pass "可下载最新版：v${LATEST_XRAY}"
+else
+  fail "下不到 v${LATEST_XRAY}（404/超时/被墙），安装时需用 XRAY_ZIP_URL=file:// 离线包"
+fi
+if check_url "https://gitee.com/sk_gg/sk5/releases/download/Xray1.6.1/Xray-linux-64.zip"; then
+  info "gitee 镜像可达（仅含 1.6.1 旧版本）"
+else
+  warn "gitee 镜像不可达（不影响装最新版）"
+fi
 
 if curl -fsS --max-time 8 https://api.ip.sb/ip >/dev/null 2>&1; then
   pass "api.ip.sb 可达（脚本用它查出口 IP）"

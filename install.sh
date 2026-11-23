@@ -22,7 +22,7 @@
 set -Eeuo pipefail
 
 PORT_BASE="${PORT_BASE:-5000}"
-XRAY_VERSION="${XRAY_VERSION:-1.6.1}"
+XRAY_VERSION="${XRAY_VERSION:-26.11.9}"
 XRAY_SHA256="${XRAY_SHA256:-}"
 XRAY_ZIP_URL="${XRAY_ZIP_URL:-}"
 LISTEN_IPS="${LISTEN_IPS:-}"
@@ -49,7 +49,7 @@ case "${1:-}" in
 环境变量:
   PORT_BASE      起始端口，默认 5000
   LISTEN_IPS     手动指定 IP，空格或逗号分隔（默认自动探测）
-  XRAY_VERSION   Xray 版本，默认 1.6.1，可填 latest
+  XRAY_VERSION   Xray 版本，默认 26.11.9（最新稳定版），可填 latest
   XRAY_ZIP_URL   自定义 zip 地址，支持 file:// 本地文件
   XRAY_SHA256    期望的 sha256（可选，官方源会自动取 .dgst）
 
@@ -105,12 +105,13 @@ esac
 if [[ "$XRAY_VERSION" == latest ]]; then
   XRAY_VERSION="$(curl -fsSL --max-time 20 https://api.github.com/repos/XTLS/Xray-core/releases/latest 2>/dev/null \
     | sed -n 's/.*"tag_name": *"v\{0,1\}\([^"]*\)".*/\1/p' | head -1 || true)"
-  [[ -n "$XRAY_VERSION" ]] || die "取不到最新版本号，请用 XRAY_VERSION=25.x.y 指定"
+  [[ -n "$XRAY_VERSION" ]] || die "取不到最新版本号，请用 XRAY_VERSION=26.x.y 指定"
 fi
 log "目标版本：v${XRAY_VERSION}"
-case "$XRAY_VERSION" in
-  1.*) warn "1.x 已是 EOL 版本，建议 XRAY_VERSION=latest" ;;
-esac
+maj="${XRAY_VERSION%%.*}"
+if [[ "$maj" =~ ^[0-9]+$ ]] && (( maj < 25 )); then
+  warn "v${XRAY_VERSION} 属于旧分支（当前主线 26.x），建议 XRAY_VERSION=latest"
+fi
 
 # ---------------------------------------------------------------- 取 IP
 detect_ips() {
@@ -192,9 +193,11 @@ fetch_xray() {
   local urls=() u tmp rc=1 expect
   [[ -n "$XRAY_ZIP_URL" ]] && urls+=("$XRAY_ZIP_URL")
   urls+=("https://github.com/XTLS/Xray-core/releases/download/v${XRAY_VERSION}/${ZIP_NAME}")
-  if [[ "$ZIP_NAME" == "Xray-linux-64.zip" && "$XRAY_VERSION" == "1.6.1" ]]; then
-    urls+=("https://gitee.com/sk_gg/sk5/releases/download/Xray1.6.1/Xray-linux-64.zip")
-  fi
+  # gitee 镜像只保留了少数旧版本，仅在明确指定这些版本时作为 GitHub 不通的兜底
+  case "${ZIP_NAME}:${XRAY_VERSION}" in
+    Xray-linux-64.zip:1.6.1) urls+=("https://gitee.com/sk_gg/sk5/releases/download/Xray1.6.1/Xray-linux-64.zip") ;;
+    Xray-linux-64.zip:1.7.5) urls+=("https://gitee.com/sk_gg/sk5/releases/download/Xray1.7.5/Xray-linux-64.zip") ;;
+  esac
   tmp="$(mktemp)"
   for u in "${urls[@]}"; do
     log "下载：$u"
