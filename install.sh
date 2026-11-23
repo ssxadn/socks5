@@ -227,10 +227,18 @@ fetch_xray() {
   chmod +x "$XRAY_BIN"
 }
 
-if [[ ! -x "$XRAY_BIN" ]]; then
+need_fetch=1
+if [[ -x "$XRAY_BIN" ]]; then
+  cur_ver="$("$XRAY_BIN" version 2>/dev/null | head -1 | awk '{print $2}' || true)"
+  if [[ -n "$cur_ver" && "$cur_ver" == "$XRAY_VERSION" ]]; then
+    need_fetch=0
+    log "已存在 v${cur_ver}，与目标一致，跳过下载"
+  else
+    warn "已安装 v${cur_ver:-未知}，目标 v${XRAY_VERSION}，重新下载覆盖"
+  fi
+fi
+if (( need_fetch )); then
   fetch_xray || die "Xray 下载/解压全部失败（检查网络或换 XRAY_ZIP_URL）"
-else
-  log "已存在 ${XRAY_BIN}，跳过下载"
 fi
 "$XRAY_BIN" version >/dev/null 2>&1 || die "二进制无法执行（架构不匹配或被替换）：$("$XRAY_BIN" version 2>&1 | head -1 || true)"
 "$XRAY_BIN" version 2>/dev/null | head -2 || true
